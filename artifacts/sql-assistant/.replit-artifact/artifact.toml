@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "SQL Assistant"
+version = "1.0.0"
+id = "artifacts/sql-assistant"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21072
+
+[services.development]
+run = "pnpm --filter @workspace/sql-assistant run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/sql-assistant", "run", "build" ]
+publicDir = "artifacts/sql-assistant/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21072"
+BASE_PATH = "/"

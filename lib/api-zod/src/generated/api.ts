@@ -14,3 +14,68 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary Convert natural language to SQL and execute it
+ */
+export const RunNaturalLanguageQueryBody = zod.object({
+  question: zod
+    .string()
+    .describe("The natural language question to convert to SQL"),
+});
+
+export const RunNaturalLanguageQueryResponse = zod.object({
+  sql: zod.string().describe("The generated SQL query"),
+  columns: zod.array(zod.string()).describe("Column names in the result"),
+  rows: zod
+    .array(zod.array(zod.string().nullable()))
+    .describe("Result rows as arrays of values"),
+  rowCount: zod.number().describe("Number of rows returned"),
+  error: zod
+    .string()
+    .nullish()
+    .describe("Error message if query failed or was invalid"),
+  warning: zod
+    .string()
+    .nullish()
+    .describe("Optional warning, e.g., empty result set"),
+});
+
+/**
+ * @summary Explain a SQL query in plain English
+ */
+export const ExplainSqlQueryBody = zod.object({
+  sql: zod.string().describe("The SQL query to explain"),
+});
+
+export const ExplainSqlQueryResponse = zod.object({
+  explanation: zod
+    .string()
+    .describe("Plain English explanation of the SQL query"),
+});
+
+/**
+ * @summary Get the database schema being used
+ */
+export const GetSchemaResponse = zod.object({
+  schema: zod.string().describe("Human-readable schema description"),
+  tables: zod.array(
+    zod.object({
+      name: zod.string(),
+      columns: zod.array(
+        zod.object({
+          name: zod.string(),
+          type: zod.string(),
+          nullable: zod.boolean(),
+        }),
+      ),
+    }),
+  ),
+});
+
+/**
+ * @summary Get sample questions the user can ask
+ */
+export const GetSampleQuestionsResponse = zod.object({
+  questions: zod.array(zod.string()),
+});

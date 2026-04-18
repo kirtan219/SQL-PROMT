@@ -6,4 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./columnInfo";
+export * from "./errorResponse";
+export * from "./explainQueryRequest";
+export * from "./explainQueryResponse";
 export * from "./healthStatus";
+export * from "./naturalLanguageQueryRequest";
+export * from "./queryResult";
+export * from "./sampleQuestionsResponse";
+export * from "./schemaResponse";
+export * from "./tableInfo";

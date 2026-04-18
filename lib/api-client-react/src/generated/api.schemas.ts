@@ -8,3 +8,64 @@
 export interface HealthStatus {
   status: string;
 }
+
+export interface NaturalLanguageQueryRequest {
+  /** The natural language question to convert to SQL */
+  question: string;
+}
+
+export interface QueryResult {
+  /** The generated SQL query */
+  sql: string;
+  /** Column names in the result */
+  columns: string[];
+  /** Result rows as arrays of values */
+  rows: (string | null)[][];
+  /** Number of rows returned */
+  rowCount: number;
+  /**
+   * Error message if query failed or was invalid
+   * @nullable
+   */
+  error?: string | null;
+  /**
+   * Optional warning, e.g., empty result set
+   * @nullable
+   */
+  warning?: string | null;
+}
+
+export interface ExplainQueryRequest {
+  /** The SQL query to explain */
+  sql: string;
+}
+
+export interface ExplainQueryResponse {
+  /** Plain English explanation of the SQL query */
+  explanation: string;
+}
+
+export interface ColumnInfo {
+  name: string;
+  type: string;
+  nullable: boolean;
+}
+
+export interface TableInfo {
+  name: string;
+  columns: ColumnInfo[];
+}
+
+export interface SchemaResponse {
+  /** Human-readable schema description */
+  schema: string;
+  tables: TableInfo[];
+}
+
+export interface SampleQuestionsResponse {
+  questions: string[];
+}
+
+export interface ErrorResponse {
+  error: string;
+}

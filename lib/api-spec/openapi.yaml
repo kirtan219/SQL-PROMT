@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: sql
+    description: SQL query generation and execution
 paths:
   /healthz:
     get:
@@ -24,6 +26,95 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /sql/query:
+    post:
+      operationId: runNaturalLanguageQuery
+      tags: [sql]
+      summary: Convert natural language to SQL and execute it
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NaturalLanguageQueryRequest"
+      responses:
+        "200":
+          description: Query executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryResult"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /sql/explain:
+    post:
+      operationId: explainSqlQuery
+      tags: [sql]
+      summary: Explain a SQL query in plain English
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExplainQueryRequest"
+      responses:
+        "200":
+          description: Explanation generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExplainQueryResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /sql/schema:
+    get:
+      operationId: getSchema
+      tags: [sql]
+      summary: Get the database schema being used
+      responses:
+        "200":
+          description: Schema retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SchemaResponse"
+
+  /sql/sample-questions:
+    get:
+      operationId: getSampleQuestions
+      tags: [sql]
+      summary: Get sample questions the user can ask
+      responses:
+        "200":
+          description: Sample questions retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SampleQuestionsResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +125,121 @@ components:
       required:
         - status
 
+    NaturalLanguageQueryRequest:
+      type: object
+      properties:
+        question:
+          type: string
+          description: The natural language question to convert to SQL
+      required:
+        - question
+
+    QueryResult:
+      type: object
+      properties:
+        sql:
+          type: string
+          description: The generated SQL query
+        columns:
+          type: array
+          items:
+            type: string
+          description: Column names in the result
+        rows:
+          type: array
+          items:
+            type: array
+            items:
+              type: ["string", "null"]
+          description: Result rows as arrays of values
+        rowCount:
+          type: integer
+          description: Number of rows returned
+        error:
+          type: ["string", "null"]
+          description: Error message if query failed or was invalid
+        warning:
+          type: ["string", "null"]
+          description: Optional warning, e.g., empty result set
+      required:
+        - sql
+        - columns
+        - rows
+        - rowCount
+
+    ExplainQueryRequest:
+      type: object
+      properties:
+        sql:
+          type: string
+          description: The SQL query to explain
+      required:
+        - sql
+
+    ExplainQueryResponse:
+      type: object
+      properties:
+        explanation:
+          type: string
+          description: Plain English explanation of the SQL query
+      required:
+        - explanation
+
+    SchemaResponse:
+      type: object
+      properties:
+        schema:
+          type: string
+          description: Human-readable schema description
+        tables:
+          type: array
+          items:
+            $ref: "#/components/schemas/TableInfo"
+      required:
+        - schema
+        - tables
+
+    TableInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        columns:
+          type: array
+          items:
+            $ref: "#/components/schemas/ColumnInfo"
+      required:
+        - name
+        - columns
+
+    ColumnInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        nullable:
+          type: boolean
+      required:
+        - name
+        - type
+        - nullable
+
+    SampleQuestionsResponse:
+      type: object
+      properties:
+        questions:
+          type: array
+          items:
+            type: string
+      required:
+        - questions
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error

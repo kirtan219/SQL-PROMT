@@ -1,0 +1,80 @@
+For a hackathon, your prompt needs to be a "Zero-Shot Masterpiece"—meaning it gives the AI everything it needs to get the query right on the first try without a long conversation.
+
+Below is the **Ultimate Prompt**, the **API Setup**, and the **Deployment Strategy** for Google Cloud.
+
+---
+
+### 1. The "Perfect" System Prompt
+Copy and paste this into your code. It uses **Schema Grounding** and **Negative Constraints** (telling the AI what *not* to do) to ensure high accuracy.
+
+```text
+You are a world-class SQL Expert and Data Analyst. Your task is to translate Natural Language questions into valid, optimized SQLite SQL queries.
+
+### DATABASE SCHEMA:
+{insert_your_schema_here}
+Example: 
+Table: Users (id INTEGER, name TEXT, signup_date DATE)
+Table: Sales (id INTEGER, user_id INTEGER, amount FLOAT, order_date DATE)
+
+### CONSTRAINTS:
+1. Return ONLY the raw SQL code. Do not include markdown blocks (```sql), explanations, or introductory text.
+2. Only use columns and tables provided in the schema above.
+3. Use modern SQL best practices (e.g., explicit JOINs, aliases for clarity).
+4. If the question cannot be answered with the given schema, return the string: "ERROR: Insufficient data in schema."
+5. For date-based queries, assume the current date is {current_date}.
+6. Limit results to 100 rows unless specified otherwise to prevent crashes.
+
+### OUTPUT FORMAT:
+[Valid SQL Query]
+```
+
+---
+
+### 2. The Free API: Gemini 1.5 Flash
+Since you are deploying to Google Cloud, **Gemini 1.5 Flash** is your best friend. 
+* **Cost:** $0 (Free Tier).
+* **Limits:** 15 Requests Per Minute (RPM), which is plenty for a hackathon demo.
+* **Setup:**
+    1.  Go to [Google AI Studio](https://aistudio.google.com/).
+    2.  Click **"Get API Key"**.
+    3.  In your Python code:
+        ```python
+        import google.generativeai as genai
+        genai.configure(api_key="YOUR_API_KEY")
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(full_prompt)
+        sql_query = response.text.strip()
+        ```
+
+---
+
+### 3. Verification: How to "Safe-Run" the Query
+To verify if it works without breaking your app, use this **3-Step Pipeline**:
+
+1.  **Syntactic Check:** Use a `try/except` block in Python when executing.
+2.  **Read-Only Execution:** Use a connection that cannot `DROP`, `DELETE`, or `UPDATE`.
+3.  **Result Validation:** Check if the output is empty. If it is, the query might be technically correct but logically flawed (e.g., looking for "June" in a dataset that only has "July").
+
+
+
+---
+
+### 4. Deployment on Google Cloud (The Free Way)
+The fastest, "hackathon-proof" way to deploy is **Google Cloud Run**.
+
+#### Why Cloud Run?
+It is **Serverless**. It scales to zero when you aren't using it, so it won't cost you a cent during the hackathon unless you have thousands of users.
+
+**Steps to Deploy:**
+1.  **Containerize:** Create a `Dockerfile` for your Python app (Flask or Streamlit).
+2.  **Push to Artifact Registry:** `gcloud builds submit --tag gcr.io/PROJECT_ID/prompt-to-sql`
+3.  **Deploy:**
+    `gcloud run deploy --image gcr.io/PROJECT_ID/prompt-to-sql --platform managed --allow-unauthenticated`
+
+---
+
+### 🛠️ Hackathon "Winning" Tips:
+* **The "Explain" Toggle:** Add a button in your UI that says "Explain this query." When clicked, send the generated SQL back to Gemini and ask: "Explain what this query does to a 5-year-old."
+* **Sample Questions:** Don't let the judges stare at an empty search bar. Provide clickable "Quick Start" buttons like *"Show me top sales"* or *"Who joined last week?"*
+
+Are you building the frontend in **Streamlit** (Python) or a JS framework like **React**? (I can give you the specific boilerplate code for either!)
