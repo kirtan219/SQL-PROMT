@@ -1,6 +1,6 @@
 Here’s a clean, professional **README.md** you can use for your repo. I’ve structured it like a real GitHub project (with badges, sections, and clear instructions). You can copy-paste and tweak names if needed.
 
-# 🚀 SQL-PROMPT
+# 🚀 SQL-Asistant
 
 An AI-powered tool that helps you generate SQL queries from natural language prompts quickly and efficiently.
 
@@ -9,7 +9,7 @@ An AI-powered tool that helps you generate SQL queries from natural language pro
 
 ## 📌 Overview
 
-**SQL-PROMPT** is designed to simplify SQL query writing by converting plain English instructions into structured SQL queries. Tools like this follow the growing trend of **text-to-SQL systems**, where natural language is translated into database queries automatically. ([arXiv][1])
+**SQL-Asistant** is designed to simplify SQL query writing by converting plain English instructions into structured SQL queries. Tools like this follow the growing trend of **text-to-SQL systems**, where natural language is translated into database queries automatically. ([arXiv][1])
 
 This project helps:
 
