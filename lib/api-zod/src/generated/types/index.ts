@@ -7,11 +7,15 @@
  */
 
 export * from "./columnInfo";
+export * from "./createTableRequest";
+export * from "./createTableResponse";
+export * from "./dropTableResponse";
 export * from "./errorResponse";
 export * from "./explainQueryRequest";
 export * from "./explainQueryResponse";
 export * from "./healthStatus";
 export * from "./naturalLanguageQueryRequest";
+export * from "./newColumnDef";
 export * from "./queryResult";
 export * from "./sampleQuestionsResponse";
 export * from "./schemaResponse";

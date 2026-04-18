@@ -21,6 +21,11 @@ let cachedSchema: SchemaInfo | null = null;
 let cacheTime: number = 0;
 const CACHE_TTL_MS = 30_000;
 
+export function invalidateSchemaCache(): void {
+  cachedSchema = null;
+  cacheTime = 0;
+}
+
 export async function getSchemaInfo(): Promise<SchemaInfo> {
   const now = Date.now();
   if (cachedSchema && now - cacheTime < CACHE_TTL_MS) {
@@ -91,9 +96,4 @@ export async function getSchemaInfo(): Promise<SchemaInfo> {
       schemaText: "Unable to read schema. Ensure the database is connected.",
     };
   }
-}
-
-export function invalidateSchemaCache(): void {
-  cachedSchema = null;
-  cacheTime = 0;
 }

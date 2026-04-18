@@ -66,6 +66,33 @@ export interface SampleQuestionsResponse {
   questions: string[];
 }
 
+export interface NewColumnDef {
+  name: string;
+  /** SQL type: TEXT, INTEGER, NUMERIC, BOOLEAN, DATE, TIMESTAMP, SERIAL */
+  type: string;
+  nullable: boolean;
+  primaryKey: boolean;
+  unique: boolean;
+}
+
+export interface CreateTableRequest {
+  /** Name of the table to create */
+  tableName: string;
+  columns: NewColumnDef[];
+}
+
+export interface CreateTableResponse {
+  tableName: string;
+  /** The CREATE TABLE SQL that was executed */
+  sql: string;
+  message: string;
+}
+
+export interface DropTableResponse {
+  tableName: string;
+  message: string;
+}
+
 export interface ErrorResponse {
   error: string;
 }

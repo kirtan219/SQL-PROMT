@@ -7,12 +7,32 @@ export interface QueryRunResult {
   rowCount: number;
 }
 
-const BLOCKED_KEYWORDS = /\b(DROP|DELETE|UPDATE|INSERT|TRUNCATE|ALTER|CREATE|GRANT|REVOKE|REPLACE|MERGE|UPSERT|EXEC|EXECUTE|CALL|PRAGMA|ATTACH|DETACH)\b/i;
+const BLOCKED_READ_KEYWORDS = /\b(DROP|DELETE|UPDATE|INSERT|TRUNCATE|ALTER|CREATE|GRANT|REVOKE|REPLACE|MERGE|UPSERT|EXEC|EXECUTE|CALL|PRAGMA|ATTACH|DETACH)\b/i;
+
+const DANGEROUS_DDL = /\b(DROP\s+DATABASE|DROP\s+SCHEMA|TRUNCATE)\b/i;
+
+export async function runDDL(sql: string): Promise<void> {
+  const trimmed = sql.trim();
+
+  if (DANGEROUS_DDL.test(trimmed)) {
+    throw new Error("Dropping databases or schemas is not allowed.");
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query(trimmed);
+    logger.info({ sql: trimmed }, "DDL executed successfully");
+  } catch (err) {
+    throw err;
+  } finally {
+    client.release();
+  }
+}
 
 export async function runReadOnlyQuery(sql: string): Promise<QueryRunResult> {
   const trimmed = sql.trim();
 
-  if (BLOCKED_KEYWORDS.test(trimmed)) {
+  if (BLOCKED_READ_KEYWORDS.test(trimmed)) {
     throw new Error(
       "Only SELECT queries are allowed for safety. The generated query contains a write operation.",
     );

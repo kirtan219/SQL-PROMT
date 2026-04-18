@@ -1,10 +1,12 @@
 import { Router, type IRouter } from "express";
 import { generateSQL, explainSQL } from "../lib/gemini";
-import { getSchemaInfo } from "../lib/schema-inspector";
-import { runReadOnlyQuery } from "../lib/query-runner";
+import { getSchemaInfo, invalidateSchemaCache } from "../lib/schema-inspector";
+import { runReadOnlyQuery, runDDL } from "../lib/query-runner";
 import {
   RunNaturalLanguageQueryBody,
   ExplainSqlQueryBody,
+  CreateTableBody,
+  DropTableParams,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -146,6 +148,73 @@ router.post("/sql/explain", async (req, res): Promise<void> => {
       error:
         err instanceof Error ? err.message : "Failed to generate explanation",
     });
+  }
+});
+
+router.post("/sql/tables", async (req, res): Promise<void> => {
+  const parsed = CreateTableBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { tableName, columns } = parsed.data;
+
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(tableName)) {
+    res.status(400).json({ error: "Invalid table name. Use letters, numbers, and underscores only." });
+    return;
+  }
+
+  if (columns.length === 0) {
+    res.status(400).json({ error: "At least one column is required." });
+    return;
+  }
+
+  const columnDefs = columns.map((col) => {
+    const constraints: string[] = [];
+    if (col.primaryKey) constraints.push("PRIMARY KEY");
+    if (!col.nullable && !col.primaryKey) constraints.push("NOT NULL");
+    if (col.unique && !col.primaryKey) constraints.push("UNIQUE");
+    return `  "${col.name}" ${col.type}${constraints.length ? " " + constraints.join(" ") : ""}`;
+  });
+
+  const sql = `CREATE TABLE "${tableName}" (\n${columnDefs.join(",\n")}\n);`;
+
+  try {
+    await runDDL(sql);
+    invalidateSchemaCache();
+    req.log.info({ tableName, sql }, "Table created");
+    res.status(201).json({ tableName, sql, message: `Table "${tableName}" created successfully.` });
+  } catch (err) {
+    req.log.error({ err, sql }, "Failed to create table");
+    res.status(500).json({ error: err instanceof Error ? err.message : "Failed to create table" });
+  }
+});
+
+router.delete("/sql/tables/:tableName", async (req, res): Promise<void> => {
+  const parsed = DropTableParams.safeParse(req.params);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid table name." });
+    return;
+  }
+
+  const { tableName } = parsed.data;
+
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(tableName)) {
+    res.status(400).json({ error: "Invalid table name." });
+    return;
+  }
+
+  const sql = `DROP TABLE IF EXISTS "${tableName}";`;
+
+  try {
+    await runDDL(sql);
+    invalidateSchemaCache();
+    req.log.info({ tableName }, "Table dropped");
+    res.json({ tableName, message: `Table "${tableName}" has been deleted.` });
+  } catch (err) {
+    req.log.error({ err }, "Failed to drop table");
+    res.status(500).json({ error: err instanceof Error ? err.message : "Failed to drop table" });
   }
 });
 

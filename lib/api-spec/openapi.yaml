@@ -115,6 +115,68 @@ paths:
               schema:
                 $ref: "#/components/schemas/SampleQuestionsResponse"
 
+  /sql/tables:
+    post:
+      operationId: createTable
+      tags: [sql]
+      summary: Create a new database table
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTableRequest"
+      responses:
+        "201":
+          description: Table created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateTableResponse"
+        "400":
+          description: Invalid request or table already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /sql/tables/{tableName}:
+    delete:
+      operationId: dropTable
+      tags: [sql]
+      summary: Drop (delete) a database table
+      parameters:
+        - name: tableName
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Table dropped successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DropTableResponse"
+        "400":
+          description: Invalid table name
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -235,6 +297,67 @@ components:
             type: string
       required:
         - questions
+
+    CreateTableRequest:
+      type: object
+      properties:
+        tableName:
+          type: string
+          description: Name of the table to create
+        columns:
+          type: array
+          items:
+            $ref: "#/components/schemas/NewColumnDef"
+      required:
+        - tableName
+        - columns
+
+    NewColumnDef:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          description: "SQL type: TEXT, INTEGER, NUMERIC, BOOLEAN, DATE, TIMESTAMP, SERIAL"
+        nullable:
+          type: boolean
+        primaryKey:
+          type: boolean
+        unique:
+          type: boolean
+      required:
+        - name
+        - type
+        - nullable
+        - primaryKey
+        - unique
+
+    CreateTableResponse:
+      type: object
+      properties:
+        tableName:
+          type: string
+        sql:
+          type: string
+          description: The CREATE TABLE SQL that was executed
+        message:
+          type: string
+      required:
+        - tableName
+        - sql
+        - message
+
+    DropTableResponse:
+      type: object
+      properties:
+        tableName:
+          type: string
+        message:
+          type: string
+      required:
+        - tableName
+        - message
 
     ErrorResponse:
       type: object

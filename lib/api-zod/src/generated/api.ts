@@ -79,3 +79,35 @@ export const GetSchemaResponse = zod.object({
 export const GetSampleQuestionsResponse = zod.object({
   questions: zod.array(zod.string()),
 });
+
+/**
+ * @summary Create a new database table
+ */
+export const CreateTableBody = zod.object({
+  tableName: zod.string().describe("Name of the table to create"),
+  columns: zod.array(
+    zod.object({
+      name: zod.string(),
+      type: zod
+        .string()
+        .describe(
+          "SQL type: TEXT, INTEGER, NUMERIC, BOOLEAN, DATE, TIMESTAMP, SERIAL",
+        ),
+      nullable: zod.boolean(),
+      primaryKey: zod.boolean(),
+      unique: zod.boolean(),
+    }),
+  ),
+});
+
+/**
+ * @summary Drop (delete) a database table
+ */
+export const DropTableParams = zod.object({
+  tableName: zod.coerce.string(),
+});
+
+export const DropTableResponse = zod.object({
+  tableName: zod.string(),
+  message: zod.string(),
+});

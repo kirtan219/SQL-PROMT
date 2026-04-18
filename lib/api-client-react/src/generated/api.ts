@@ -17,6 +17,9 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  CreateTableRequest,
+  CreateTableResponse,
+  DropTableResponse,
   ErrorResponse,
   ExplainQueryRequest,
   ExplainQueryResponse,
@@ -426,3 +429,173 @@ export function useGetSampleQuestions<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Create a new database table
+ */
+export const getCreateTableUrl = () => {
+  return `/api/sql/tables`;
+};
+
+export const createTable = async (
+  createTableRequest: CreateTableRequest,
+  options?: RequestInit,
+): Promise<CreateTableResponse> => {
+  return customFetch<CreateTableResponse>(getCreateTableUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createTableRequest),
+  });
+};
+
+export const getCreateTableMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createTable>>,
+    TError,
+    { data: BodyType<CreateTableRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createTable>>,
+  TError,
+  { data: BodyType<CreateTableRequest> },
+  TContext
+> => {
+  const mutationKey = ["createTable"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createTable>>,
+    { data: BodyType<CreateTableRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createTable(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateTableMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createTable>>
+>;
+export type CreateTableMutationBody = BodyType<CreateTableRequest>;
+export type CreateTableMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Create a new database table
+ */
+export const useCreateTable = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createTable>>,
+    TError,
+    { data: BodyType<CreateTableRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createTable>>,
+  TError,
+  { data: BodyType<CreateTableRequest> },
+  TContext
+> => {
+  return useMutation(getCreateTableMutationOptions(options));
+};
+
+/**
+ * @summary Drop (delete) a database table
+ */
+export const getDropTableUrl = (tableName: string) => {
+  return `/api/sql/tables/${tableName}`;
+};
+
+export const dropTable = async (
+  tableName: string,
+  options?: RequestInit,
+): Promise<DropTableResponse> => {
+  return customFetch<DropTableResponse>(getDropTableUrl(tableName), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDropTableMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof dropTable>>,
+    TError,
+    { tableName: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof dropTable>>,
+  TError,
+  { tableName: string },
+  TContext
+> => {
+  const mutationKey = ["dropTable"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof dropTable>>,
+    { tableName: string }
+  > = (props) => {
+    const { tableName } = props ?? {};
+
+    return dropTable(tableName, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DropTableMutationResult = NonNullable<
+  Awaited<ReturnType<typeof dropTable>>
+>;
+
+export type DropTableMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Drop (delete) a database table
+ */
+export const useDropTable = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof dropTable>>,
+    TError,
+    { tableName: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof dropTable>>,
+  TError,
+  { tableName: string },
+  TContext
+> => {
+  return useMutation(getDropTableMutationOptions(options));
+};
