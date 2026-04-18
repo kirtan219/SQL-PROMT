@@ -20,3 +20,5 @@ export * from "./queryResult";
 export * from "./sampleQuestionsResponse";
 export * from "./schemaResponse";
 export * from "./tableInfo";
+export * from "./uploadDatasetBody";
+export * from "./uploadDatasetResponse";

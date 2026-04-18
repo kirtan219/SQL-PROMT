@@ -13,3 +13,4 @@ export type { QueryResult } from "./generated/types/queryResult";
 export type { SampleQuestionsResponse } from "./generated/types/sampleQuestionsResponse";
 export type { SchemaResponse } from "./generated/types/schemaResponse";
 export type { TableInfo } from "./generated/types/tableInfo";
+export type { UploadDatasetResponse } from "./generated/types/uploadDatasetResponse";

@@ -66,6 +66,16 @@ export interface SampleQuestionsResponse {
   questions: string[];
 }
 
+export interface UploadDatasetResponse {
+  tableName: string;
+  rowCount: number;
+  columnCount: number;
+  columns: string[];
+  message: string;
+  /** The CREATE TABLE SQL that was generated */
+  sql: string;
+}
+
 export interface NewColumnDef {
   name: string;
   /** SQL type: TEXT, INTEGER, NUMERIC, BOOLEAN, DATE, TIMESTAMP, SERIAL */
@@ -96,3 +106,10 @@ export interface DropTableResponse {
 export interface ErrorResponse {
   error: string;
 }
+
+export type UploadDatasetBody = {
+  /** CSV or Excel (.xlsx, .xls) file to upload */
+  file: Blob;
+  /** Optional custom table name (auto-derived from filename if omitted) */
+  tableName?: string;
+};

@@ -8,12 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Terminal, Database, Loader2, AlertCircle, Play, Info, TableProperties } from "lucide-react";
+import { Terminal, Database, Loader2, AlertCircle, Play, Info, TableProperties, Upload } from "lucide-react";
 import CreateTableDialog from "@/components/CreateTableDialog";
+import UploadDatasetDialog from "@/components/UploadDatasetDialog";
 
 export default function Home() {
   const [question, setQuestion] = useState("");
   const [tableDialogOpen, setTableDialogOpen] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const { data: sampleQuestionsData } = useGetSampleQuestions();
   const { data: schemaData } = useGetSchema();
   
@@ -55,13 +57,27 @@ export default function Home() {
             <p className="text-xs text-muted-foreground">Natural Language to PostgreSQL</p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setTableDialogOpen(true)} className="gap-2">
-          <TableProperties className="h-4 w-4" />
-          Manage Tables
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="default" size="sm" onClick={() => setUploadDialogOpen(true)} className="gap-2">
+            <Upload className="h-4 w-4" />
+            Upload Dataset
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setTableDialogOpen(true)} className="gap-2">
+            <TableProperties className="h-4 w-4" />
+            Manage Tables
+          </Button>
+        </div>
       </header>
 
       <CreateTableDialog open={tableDialogOpen} onOpenChange={setTableDialogOpen} />
+      <UploadDatasetDialog
+        open={uploadDialogOpen}
+        onOpenChange={setUploadDialogOpen}
+        onSuccess={(tableName) => {
+          setQuestion(`Show me all data from ${tableName} (first 50 rows)`);
+          queryMutation.mutate({ data: { question: `Show me all data from ${tableName} (first 50 rows)` } });
+        }}
+      />
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 lg:p-8 space-y-6 flex flex-col">
         {/* Input Section */}

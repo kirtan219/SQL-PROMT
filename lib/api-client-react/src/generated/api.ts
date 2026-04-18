@@ -28,6 +28,8 @@ import type {
   QueryResult,
   SampleQuestionsResponse,
   SchemaResponse,
+  UploadDatasetBody,
+  UploadDatasetResponse,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -429,6 +431,97 @@ export function useGetSampleQuestions<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Upload a CSV or Excel file and import it as a database table
+ */
+export const getUploadDatasetUrl = () => {
+  return `/api/sql/upload`;
+};
+
+export const uploadDataset = async (
+  uploadDatasetBody: UploadDatasetBody,
+  options?: RequestInit,
+): Promise<UploadDatasetResponse> => {
+  const formData = new FormData();
+  formData.append(`file`, uploadDatasetBody.file);
+  if (uploadDatasetBody.tableName !== undefined) {
+    formData.append(`tableName`, uploadDatasetBody.tableName);
+  }
+
+  return customFetch<UploadDatasetResponse>(getUploadDatasetUrl(), {
+    ...options,
+    method: "POST",
+    body: formData,
+  });
+};
+
+export const getUploadDatasetMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadDataset>>,
+    TError,
+    { data: BodyType<UploadDatasetBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof uploadDataset>>,
+  TError,
+  { data: BodyType<UploadDatasetBody> },
+  TContext
+> => {
+  const mutationKey = ["uploadDataset"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof uploadDataset>>,
+    { data: BodyType<UploadDatasetBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return uploadDataset(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UploadDatasetMutationResult = NonNullable<
+  Awaited<ReturnType<typeof uploadDataset>>
+>;
+export type UploadDatasetMutationBody = BodyType<UploadDatasetBody>;
+export type UploadDatasetMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Upload a CSV or Excel file and import it as a database table
+ */
+export const useUploadDataset = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadDataset>>,
+    TError,
+    { data: BodyType<UploadDatasetBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof uploadDataset>>,
+  TError,
+  { data: BodyType<UploadDatasetBody> },
+  TContext
+> => {
+  return useMutation(getUploadDatasetMutationOptions(options));
+};
 
 /**
  * @summary Create a new database table

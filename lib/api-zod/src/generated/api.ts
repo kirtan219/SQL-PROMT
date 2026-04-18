@@ -81,6 +81,30 @@ export const GetSampleQuestionsResponse = zod.object({
 });
 
 /**
+ * @summary Upload a CSV or Excel file and import it as a database table
+ */
+export const UploadDatasetBody = zod.object({
+  file: zod
+    .instanceof(File)
+    .describe("CSV or Excel (.xlsx, .xls) file to upload"),
+  tableName: zod
+    .string()
+    .optional()
+    .describe(
+      "Optional custom table name (auto-derived from filename if omitted)",
+    ),
+});
+
+export const UploadDatasetResponse = zod.object({
+  tableName: zod.string(),
+  rowCount: zod.number(),
+  columnCount: zod.number(),
+  columns: zod.array(zod.string()),
+  message: zod.string(),
+  sql: zod.string().describe("The CREATE TABLE SQL that was generated"),
+});
+
+/**
  * @summary Create a new database table
  */
 export const CreateTableBody = zod.object({

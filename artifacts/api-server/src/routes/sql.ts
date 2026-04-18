@@ -1,13 +1,35 @@
 import { Router, type IRouter } from "express";
+import multer from "multer";
 import { generateSQL, explainSQL } from "../lib/gemini";
 import { getSchemaInfo, invalidateSchemaCache } from "../lib/schema-inspector";
 import { runReadOnlyQuery, runDDL } from "../lib/query-runner";
+import { importDataset } from "../lib/dataset-uploader";
 import {
   RunNaturalLanguageQueryBody,
   ExplainSqlQueryBody,
   CreateTableBody,
   DropTableParams,
 } from "@workspace/api-zod";
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = [
+      "text/csv",
+      "application/vnd.ms-excel",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "application/csv",
+      "text/plain",
+    ];
+    const ext = file.originalname.toLowerCase();
+    if (allowed.includes(file.mimetype) || ext.endsWith(".csv") || ext.endsWith(".xlsx") || ext.endsWith(".xls")) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only CSV and Excel files are supported."));
+    }
+  },
+});
 
 const router: IRouter = Router();
 
@@ -150,6 +172,29 @@ router.post("/sql/explain", async (req, res): Promise<void> => {
     });
   }
 });
+
+router.post(
+  "/sql/upload",
+  upload.single("file"),
+  async (req, res): Promise<void> => {
+    if (!req.file) {
+      res.status(400).json({ error: "No file provided. Please upload a CSV or Excel file." });
+      return;
+    }
+
+    const customTableName = typeof req.body.tableName === "string" ? req.body.tableName.trim() : undefined;
+
+    try {
+      const result = await importDataset(req.file.buffer, req.file.originalname, customTableName || undefined);
+      res.json(result);
+    } catch (err) {
+      req.log.error({ err }, "Failed to import dataset");
+      res.status(500).json({
+        error: err instanceof Error ? err.message : "Failed to import dataset",
+      });
+    }
+  },
+);
 
 router.post("/sql/tables", async (req, res): Promise<void> => {
   const parsed = CreateTableBody.safeParse(req.body);
