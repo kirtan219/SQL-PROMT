@@ -1,20 +1,23 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 import { logger } from "./logger";
 
-let genAI: GoogleGenerativeAI | null = null;
+let openaiClient: OpenAI | null = null;
 
-function getGenAI(): GoogleGenerativeAI {
-  if (!genAI) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
+function getClient(): OpenAI {
+  if (!openaiClient) {
+    const baseURL = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
+    const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+
+    if (!baseURL || !apiKey) {
       throw new Error(
-        "GEMINI_API_KEY is not set. Please add it to your secrets.",
+        "AI integration is not configured. Please contact support.",
       );
     }
-    genAI = new GoogleGenerativeAI(apiKey);
-    logger.info("Gemini AI client initialized");
+
+    openaiClient = new OpenAI({ baseURL, apiKey });
+    logger.info("OpenAI AI client initialized via Replit integration");
   }
-  return genAI;
+  return openaiClient;
 }
 
 /**
@@ -62,7 +65,7 @@ Q: Which departments have an average salary above 90000?
 A: SELECT department, AVG(salary) AS avg_salary FROM employees GROUP BY department HAVING AVG(salary) > 90000;
 
 Example 10 — LIKE for string search:
-Q: Find all courses that mention 'science' in their name.
+Q: Find all courses that mention science in their name.
 A: SELECT course_name, department, instructor FROM courses WHERE LOWER(course_name) LIKE '%science%';
 
 Example 11 — IN clause:
@@ -97,7 +100,7 @@ Example 18 — COUNT DISTINCT:
 Q: How many unique countries do our customers come from?
 A: SELECT COUNT(DISTINCT country) AS unique_countries FROM customers;
 
-Example 19 — String concatenation and formatting:
+Example 19 — Students sorted by GPA:
 Q: List all students with their university and GPA, sorted by GPA.
 A: SELECT name, university, major, gpa FROM students WHERE gpa IS NOT NULL ORDER BY gpa DESC;
 
@@ -130,21 +133,19 @@ export async function generateSQL(
   question: string,
   schema: string,
 ): Promise<string> {
-  const ai = getGenAI();
-  const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
-
+  const client = getClient();
   const today = new Date().toISOString().split("T")[0];
 
-  const prompt = `You are a world-class SQL Expert trained on the WikiSQL dataset. Your task is to translate Natural Language questions into valid, optimized PostgreSQL queries.
+  const systemPrompt = `You are a world-class SQL Expert trained on the WikiSQL dataset. Your task is to translate Natural Language questions into valid, optimized PostgreSQL queries.
 
 ### DATABASE SCHEMA:
 ${schema}
 
 ### CONSTRAINTS:
-1. Return ONLY the raw SQL code. Do not include markdown blocks (\`\`\`sql), explanations, or introductory text.
+1. Return ONLY the raw SQL code. Do not include markdown blocks, explanations, or introductory text.
 2. Only use columns and tables provided in the schema above.
 3. Use modern SQL best practices: explicit JOINs, meaningful aliases, proper aggregations.
-4. If the question cannot be answered with the given schema, return exactly: "ERROR: Insufficient data in schema."
+4. If the question cannot be answered with the given schema, return exactly: ERROR: Insufficient data in schema.
 5. For date-based queries, assume the current date is ${today}.
 6. Limit results to 100 rows unless specified otherwise to prevent crashes.
 7. Use PostgreSQL-compatible syntax (e.g., use :: for casting, ILIKE for case-insensitive matching).
@@ -153,17 +154,19 @@ ${schema}
 10. For "top N" questions, always use ORDER BY + LIMIT.
 11. For percentage calculations, cast to NUMERIC before dividing.
 
-${FEW_SHOT_EXAMPLES}
+${FEW_SHOT_EXAMPLES}`;
 
-### NOW ANSWER THIS QUESTION:
-${question}
+  const response = await client.chat.completions.create({
+    model: "gpt-5.2",
+    max_completion_tokens: 1024,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: question },
+    ],
+  });
 
-SQL:`;
+  const text = response.choices[0]?.message?.content?.trim() ?? "";
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text().trim();
-
-  // Strip accidental markdown code fences if Gemini adds them
   return text
     .replace(/^```sql\s*/i, "")
     .replace(/^```\s*/i, "")
@@ -172,20 +175,23 @@ SQL:`;
 }
 
 export async function explainSQL(sql: string): Promise<string> {
-  const ai = getGenAI();
-  const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const client = getClient();
 
-  const prompt = `Explain what this SQL query does in simple, clear English that a non-technical person can understand. Be concise but thorough. Focus on:
-1. What data is being retrieved (which tables/columns)
-2. Any filters applied (WHERE conditions)
-3. Any grouping or aggregation (GROUP BY, COUNT, SUM, etc.)
-4. How the results are sorted or limited
+  const response = await client.chat.completions.create({
+    model: "gpt-5.2",
+    max_completion_tokens: 512,
+    messages: [
+      {
+        role: "system",
+        content:
+          "You explain SQL queries in simple, clear English for non-technical users. Be concise but thorough. Focus on: what data is retrieved, any filters applied, any grouping or aggregation, and how results are sorted.",
+      },
+      {
+        role: "user",
+        content: `Explain this SQL query:\n\n${sql}`,
+      },
+    ],
+  });
 
-SQL Query:
-${sql}
-
-Plain English Explanation:`;
-
-  const result = await model.generateContent(prompt);
-  return result.response.text().trim();
+  return response.choices[0]?.message?.content?.trim() ?? "";
 }
